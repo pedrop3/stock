@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  stock-db:
+    container_name: stock-db
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: stock-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /data/postgres
+    ports:
+      - "5430:5432"
