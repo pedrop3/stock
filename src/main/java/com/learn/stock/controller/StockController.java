@@ -23,9 +23,9 @@ public class StockController {
 
     @Operation(summary = "Register a stock movement")
     @PostMapping("/movement")
-    public ResponseEntity<String> recordMovement(@RequestBody StockMovementRequest request) {
+    public ResponseEntity<Void> recordMovement(@RequestBody StockMovementRequest request) {
         stockService.recordMovement(request);
-        return ResponseEntity.ok().body("OI");
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Get stock alerts for products")
