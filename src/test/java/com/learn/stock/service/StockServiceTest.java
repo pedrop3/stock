@@ -20,7 +20,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -39,7 +39,7 @@ class StockServiceTest {
     MovementStrategyFactory strategyFactory;
 
     @Mock
-    private MovementTypeStrategy inStrategy;
+    MovementTypeStrategy inStrategy;
 
     @BeforeEach
     void setUp() {
@@ -47,24 +47,17 @@ class StockServiceTest {
         stockService = new StockServiceImpl(productRepo, movementRepo, strategyFactory);
     }
 
+
     @Test
-    void testRecordMovementIncreasesStock() {
-        Product product = new Product(1L, "Blue Pen", 5, 10, 10, false);
+    void givenInMovement_whenRecordMovement_thenStockIncreasesAndMovementSaved() {
+        Product product = createProduct(1L, "Blue Pen", 5, 10, 10, false);
         when(productRepo.findById(1L)).thenReturn(Optional.of(product));
         when(strategyFactory.getStrategy(MovementType.IN)).thenReturn(inStrategy);
 
+        simulateStockIncrease();
 
-        doAnswer(invocation -> {
-            Product p = invocation.getArgument(0);
-            int quantity = invocation.getArgument(1);
-            p.setCurrentStock(p.getCurrentStock() + quantity);
-            return null;
-        }).when(inStrategy).updateStock(any(Product.class), eq(5));
+        stockService.recordMovement(createMovementRequest(1L, 5, MovementType.IN));
 
-        // act
-        stockService.recordMovement(new StockMovementRequest(1L, 5, MovementType.IN));
-
-        // assert
         assertEquals(15, product.getCurrentStock());
         verify(productRepo).save(product);
         verify(movementRepo).save(any(StockMovement.class));
@@ -80,19 +73,14 @@ class StockServiceTest {
     }
 
     @Test
-    void testRecordMovementDecreasesStock() {
-        Product product = new Product(1L, "Blue Pen", 5, 10, 10, false);
+    void givenOutMovement_whenRecordMovement_thenStockDecreasesAndMovementSaved() {
+        Product product = createProduct(1L, "Blue Pen", 5, 10, 10, false);
         when(productRepo.findById(1L)).thenReturn(Optional.of(product));
         when(strategyFactory.getStrategy(MovementType.OUT)).thenReturn(inStrategy);
 
-        doAnswer(invocation -> {
-            Product p = invocation.getArgument(0);
-            int quantity = invocation.getArgument(1);
-            p.setCurrentStock(p.getCurrentStock() - quantity);
-            return null;
-        }).when(inStrategy).updateStock(any(Product.class), eq(3));
+        simulateStockDecrease();
 
-        stockService.recordMovement( new StockMovementRequest(1L, 3, MovementType.OUT));
+        stockService.recordMovement(createMovementRequest(1L, 3, MovementType.OUT));
 
         assertEquals(7, product.getCurrentStock());
         verify(productRepo).save(product);
@@ -100,7 +88,30 @@ class StockServiceTest {
     }
 
     @Test
-    void testRecordMovementWithInvalidProduct() {
+    void givenExcessiveOutMovement_whenRecordMovement_thenThrowsIllegalArgumentException() {
+        Product product = createProduct(1L, "Blue Pen", 5, 10, 10, false);
+        when(productRepo.findById(1L)).thenReturn(Optional.of(product));
+        when(strategyFactory.getStrategy(MovementType.OUT)).thenReturn(inStrategy);
+
+        // Simula estratégia que lança exceção ao tentar tirar mais do que o estoque atual
+        doAnswer(invocation -> {
+            Product p = invocation.getArgument(0);
+            int quantity = invocation.getArgument(1);
+            if (quantity > p.getCurrentStock()) throw new IllegalArgumentException("Not enough stock");
+            p.setCurrentStock(p.getCurrentStock() - quantity);
+            return null;
+        }).when(inStrategy).updateStock(any(Product.class), eq(11));
+
+
+        var createMovementRequest = createMovementRequest(1L, 11, MovementType.OUT);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                stockService.recordMovement(createMovementRequest)
+        );
+    }
+
+    @Test
+    void givenInvalidProductId_whenRecordMovement_thenThrowsNoSuchElementException() {
         when(productRepo.findById(99L)).thenReturn(Optional.empty());
         var stockMovementRequest = new StockMovementRequest(99L, 10, MovementType.IN);
 
@@ -109,83 +120,101 @@ class StockServiceTest {
     }
 
     @Test
-    void testCheckStockAlerts() {
-        Product low = new Product(1L, "Blue Pen", 10, 50, 5, false);
-        Product high = new Product(2L, "Black Pencil", 10, 50, 60, false);
-        Product ok = new Product(3L, "Notebook", 10, 50, 45, false);
+    void givenProducts_whenCheckStockAlerts_thenReturnLowAndHighOnly() {
+        Product low = createProduct(1L, "Low", 10, 50, 5, false);
+        Product high = createProduct(2L, "High", 10, 50, 60, false);
+        Product ok = createProduct(3L, "Ok", 10, 50, 30, false);
+
         when(productRepo.findAll()).thenReturn(List.of(low, high, ok));
 
         List<Product> alerts = stockService.checkStockAlerts();
 
         assertEquals(2, alerts.size());
+        assertTrue(alerts.contains(low));
+        assertTrue(alerts.contains(high));
     }
 
+
     @Test
-    void testGetObsoleteProducts() {
-        Product obs1 = new Product(1L, "Blue Pen", 10, 50, 5, true);
-        Product obs2 = new Product(2L, "Black Pencil", 10, 50, 60, true);
-        Product normal = new Product(3L, "Notebook",  10, 50, 45, false);
+    void givenProducts_whenGetObsolete_thenReturnOnlyObsoletes() {
+        Product obs1 = createProduct(1L, "Obs1", 10, 50, 5, true);
+        Product obs2 = createProduct(2L, "Obs2", 10, 50, 15, true);
+        Product normal = createProduct(3L, "Normal", 10, 50, 25, false);
 
         when(productRepo.findAll()).thenReturn(List.of(obs1, obs2, normal));
 
         List<Product> obsolete = stockService.getObsoleteProducts();
 
         assertEquals(2, obsolete.size());
-
+        assertTrue(obsolete.contains(obs1));
+        assertTrue(obsolete.contains(obs2));
     }
 
     @Test
-    void testCalculateTurnoverCountsOnlyOut() {
-        Product product = new Product(1L, "Blue Pen", 10, 20, 40, false);
-        Product product3 = new Product(3L, "Blue Pen 2", 10, 20, 40, false);
+    void givenOutMovements_whenCalculateTurnover_thenReturnCorrectCounts() {
+        Product p1 = createProduct(1L, "P1", 10, 20, 40, false);
+        Product p2 = createProduct(2L, "P2", 10, 20, 40, false);
 
-        Object[] stockMovement1 = {product, 2L};
-        Object[] stockMovement2 = {product3, 3L};
-
-        Collection<Object[]> objects= new ArrayList<>();
-        objects.add(stockMovement1);
-        objects.add(stockMovement2);
-
-        when(movementRepo.findTurnoverGrouped(MovementType.OUT)).thenReturn(objects);
+        when(movementRepo.findTurnoverGrouped(MovementType.OUT))
+                .thenReturn(List.of(new Object[]{p1, 2L}, new Object[]{p2, 3L}));
 
         Map<Product, Long> turnover = stockService.calculateTurnover();
 
-        assertEquals(2L, turnover.get(product));
+        assertEquals(2L, turnover.get(p1));
+        assertEquals(3L, turnover.get(p2));
     }
 
     @Test
-    void testClassifyABC() {
-        // Given
-        Product a = new Product(1L, "Produto A", 10, 2, 50, false);
-        Product b = new Product(2L, "Produto B", 20, 2, 50, false);
-        Product c = new Product(3L, "Produto C", 30, 2, 50, false);
-        Product d = new Product(4L, "Produto D", 40, 2, 50, false);
-        Product e = new Product(5L, "Produto E", 50, 2, 50, false);
+    void givenTurnoverData_whenClassifyABC_thenReturnsCorrectClassification() {
+        Product a = createProduct(1L, "A", 10, 50, 30, false);
+        Product b = createProduct(2L, "B", 10, 50, 30, false);
+        Product c = createProduct(3L, "C", 10, 50, 30, false);
+        Product d = createProduct(4L, "D", 10, 50, 30, false);
+        Product e = createProduct(5L, "E", 10, 50, 30, false);
 
-        List<Object[]> mockMovementOut = List.of(
-                new Object[]{a, 50L},
-                new Object[]{b, 40L},
-                new Object[]{c, 30L},
-                new Object[]{d, 20L},
-                new Object[]{e, 10L}
-        );
+        simulateTurnover(a, b, c, d, e);
 
-        when(movementRepo.findTurnoverGrouped(MovementType.OUT))
-                .thenReturn(mockMovementOut);
-
-        // When
         Map<String, List<Product>> result = stockService.classifyABC();
 
-        // Then
-        assertEquals(3, result.size());
-
-        // Com 5 produtos: 20% = 1, 50% = 2 => A:1, B:1, C:3
         assertEquals(List.of(a), result.get("A"));
         assertEquals(List.of(b), result.get("B"));
         assertEquals(List.of(c, d, e), result.get("C"));
-
-        verify(movementRepo).findTurnoverGrouped(MovementType.OUT);
-
-
     }
+
+    private Product createProduct(Long id, String name, int min, int max, int current, boolean obsolete) {
+        return new Product(id, name, min, max, current, obsolete);
+    }
+
+    private StockMovementRequest createMovementRequest(Long productId, int quantity, MovementType type) {
+        return new StockMovementRequest(productId, quantity, type);
+    }
+
+    private void simulateStockIncrease() {
+        doAnswer(invocation -> {
+            Product p = invocation.getArgument(0);
+            int quantity = invocation.getArgument(1);
+            p.setCurrentStock(p.getCurrentStock() + quantity);
+            return null;
+        }).when(inStrategy).updateStock(any(Product.class), anyInt());
+    }
+
+    private void simulateStockDecrease() {
+        doAnswer(invocation -> {
+            Product p = invocation.getArgument(0);
+            int quantity = invocation.getArgument(1);
+            p.setCurrentStock(p.getCurrentStock() - quantity);
+            return null;
+        }).when(inStrategy).updateStock(any(Product.class), anyInt());
+    }
+
+    private void simulateTurnover(Product... products) {
+        List<Object[]> mockData = new ArrayList<>();
+        long qty = 50;
+        for (Product p : products) {
+            mockData.add(new Object[]{p, qty});
+            qty -= 10;
+        }
+        when(movementRepo.findTurnoverGrouped(MovementType.OUT)).thenReturn(mockData);
+    }
+
 }
