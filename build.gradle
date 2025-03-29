@@ -35,6 +35,8 @@ dependencies {
     // Runtime Dependencies
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
 
     // Testing Dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'

@@ -9,5 +9,28 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       PGDATA: /data/postgres
+    networks:
+      - stock
     ports:
       - "5430:5432"
+
+  stock-service:
+    build: .
+    container_name: stock-service
+    depends_on:
+      - stock-db
+    networks:
+      - stock
+    ports:
+      - 8090:8090
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: stock-db
+      DB_PORT: 5432
+      DB_NAME: stock-db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+networks:
+  stock:
+    driver: bridge

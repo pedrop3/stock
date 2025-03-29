@@ -1,4 +1,3 @@
-
 INSERT INTO product (id, name, current_stock, min_stock_level, max_stock_level, obsolete)
 VALUES (1, 'Blue Pen', 50, 10, 100, false),
        (2, 'Black Pencil', 5, 20, 80, false),
@@ -30,7 +29,6 @@ VALUES (1, 'Blue Pen', 50, 10, 100, false),
        (28, 'Laser Pointer', 5, 2, 20, false),
        (29, 'Desk Lamp', 8, 5, 25, false),
        (30, 'USB Cable', 100, 30, 150, false);
-
 
 -- Realistic Stock Movements (500 total)
 INSERT INTO stock_movement (id, product_id, quantity, date_time, type)
