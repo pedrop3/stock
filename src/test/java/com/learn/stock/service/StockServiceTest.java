@@ -1,4 +1,4 @@
-package com.learn.stock;
+package com.learn.stock.service;
 
 
 import com.learn.stock.factory.MovementStrategyFactory;

@@ -1,4 +1,4 @@
-package com.learn.stock;
+package com.learn.stock.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.stock.model.MovementType;
