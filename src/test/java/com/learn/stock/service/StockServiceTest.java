@@ -18,9 +18,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -65,7 +65,7 @@ class StockServiceTest {
         stockService.recordMovement(new StockMovementRequest(1L, 5, MovementType.IN));
 
         // assert
-        Assertions.assertEquals(15, product.getCurrentStock());
+        assertEquals(15, product.getCurrentStock());
         verify(productRepo).save(product);
         verify(movementRepo).save(any(StockMovement.class));
 
@@ -74,9 +74,9 @@ class StockServiceTest {
         verify(movementRepo).save(movementCaptor.capture());
         StockMovement savedMovement = movementCaptor.getValue();
 
-        Assertions.assertEquals(1L, savedMovement.getProduct().getId());
-        Assertions.assertEquals(5, savedMovement.getQuantity());
-        Assertions.assertEquals(MovementType.IN, savedMovement.getType());
+        assertEquals(1L, savedMovement.getProduct().getId());
+        assertEquals(5, savedMovement.getQuantity());
+        assertEquals(MovementType.IN, savedMovement.getType());
     }
 
     @Test
@@ -94,7 +94,7 @@ class StockServiceTest {
 
         stockService.recordMovement( new StockMovementRequest(1L, 3, MovementType.OUT));
 
-        Assertions.assertEquals(7, product.getCurrentStock());
+        assertEquals(7, product.getCurrentStock());
         verify(productRepo).save(product);
         verify(movementRepo).save(any(StockMovement.class));
     }
@@ -117,7 +117,7 @@ class StockServiceTest {
 
         List<Product> alerts = stockService.checkStockAlerts();
 
-        Assertions.assertEquals(2, alerts.size());
+        assertEquals(2, alerts.size());
     }
 
     @Test
@@ -130,7 +130,7 @@ class StockServiceTest {
 
         List<Product> obsolete = stockService.getObsoleteProducts();
 
-        Assertions.assertEquals(2, obsolete.size());
+        assertEquals(2, obsolete.size());
 
     }
 
@@ -150,37 +150,42 @@ class StockServiceTest {
 
         Map<Product, Long> turnover = stockService.calculateTurnover();
 
-        Assertions.assertEquals(2L, turnover.get(product));
+        assertEquals(2L, turnover.get(product));
     }
 
     @Test
-    void testABCClassification() {
+    void testClassifyABC() {
+        // Given
         Product a = new Product(1L, "Produto A", 10, 2, 50, false);
         Product b = new Product(2L, "Produto B", 20, 2, 50, false);
         Product c = new Product(3L, "Produto C", 30, 2, 50, false);
         Product d = new Product(4L, "Produto D", 40, 2, 50, false);
         Product e = new Product(5L, "Produto E", 50, 2, 50, false);
 
-        when(productRepo.findAll()).thenReturn(List.of(a, b, c, d, e));
+        List<Object[]> mockMovementOut = List.of(
+                new Object[]{a, 50L},
+                new Object[]{b, 40L},
+                new Object[]{c, 30L},
+                new Object[]{d, 20L},
+                new Object[]{e, 10L}
+        );
 
-        when(movementRepo.findByProduct(any())).thenAnswer(invocation -> {
-            Product p = invocation.getArgument(0);
-            long count = switch (p.getName()) {
-                case "Produto A" -> 5;
-                case "Produto B" -> 3;
-                case "Produto C" -> 2;
-                case "Produto D" -> 1;
-                case "Produto E" -> 0;
-                default -> 0;
-            };
-            return Collections.nCopies((int) count,
-                    new StockMovement(1L,10, LocalDateTime.now(), MovementType.OUT,p));
-        });
+        when(movementRepo.findTurnoverGrouped(MovementType.OUT))
+                .thenReturn(mockMovementOut);
 
-        Map<String, List<Product>> abc = stockService.classifyABC();
+        // When
+        Map<String, List<Product>> result = stockService.classifyABC();
 
-        Assertions.assertTrue(abc.get("A").contains(a));
-        Assertions.assertTrue(abc.get("C").contains(e));
-        Assertions.assertEquals(5, abc.values().stream().mapToInt(List::size).sum());
+        // Then
+        assertEquals(3, result.size());
+
+        // Com 5 produtos: 20% = 1, 50% = 2 => A:1, B:1, C:3
+        assertEquals(List.of(a), result.get("A"));
+        assertEquals(List.of(b), result.get("B"));
+        assertEquals(List.of(c, d, e), result.get("C"));
+
+        verify(movementRepo).findTurnoverGrouped(MovementType.OUT);
+
+
     }
 }

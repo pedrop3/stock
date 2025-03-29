@@ -69,8 +69,8 @@ public class StockServiceImpl implements StockService {
         return movementRepo.findTurnoverGrouped(MovementType.OUT)
                 .stream()
                 .collect(Collectors.toMap(
-                        productLongEntry -> (Product) productLongEntry[0],
-                        productLongEntry -> (Long) productLongEntry[1]
+                                productLongEntry -> (Product) productLongEntry[0],
+                                productLongEntry -> (Long) productLongEntry[1]
                         )
                 );
 
@@ -81,7 +81,8 @@ public class StockServiceImpl implements StockService {
         var sorted = turnover.entrySet()
                 .stream()
                 .sorted((a, b) ->
-                        Long.compare(b.getValue(), a.getValue())).toList();
+                        Long.compare(b.getValue(), a.getValue())
+                ).toList();
 
         int total = sorted.size();
         int aEnd = (int) (total * 0.2);
