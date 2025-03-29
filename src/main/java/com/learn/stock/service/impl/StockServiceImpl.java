@@ -66,15 +66,14 @@ public class StockServiceImpl implements StockService {
     }
 
     public Map<Product, Long> calculateTurnover() {
-        return productRepo.findAll()
+        return movementRepo.findTurnoverGrouped(MovementType.OUT)
                 .stream()
-                .collect(Collectors.toMap(p -> p, p ->
-                        movementRepo.findByProduct(p)
-                                .stream()
-                                .filter(m -> m.getType() == MovementType.OUT)
-                                .count()
-                )
+                .collect(Collectors.toMap(
+                        productLongEntry -> (Product) productLongEntry[0],
+                        productLongEntry -> (Long) productLongEntry[1]
+                        )
                 );
+
     }
 
     public Map<String, List<Product>> classifyABC() {

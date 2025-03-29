@@ -137,15 +137,16 @@ class StockServiceTest {
     @Test
     void testCalculateTurnoverCountsOnlyOut() {
         Product product = new Product(1L, "Blue Pen", 10, 20, 40, false);
+        Product product3 = new Product(3L, "Blue Pen 2", 10, 20, 40, false);
 
-        List<StockMovement> movements = List.of(
-                new StockMovement(1L, 2, LocalDateTime.now(), MovementType.OUT, product),
-                new StockMovement(2L, 5, LocalDateTime.now(), MovementType.IN, product),
-                new StockMovement(3L, 3, LocalDateTime.now(), MovementType.OUT, product)
-        );
+        Object[] stockMovement1 = {product, 2L};
+        Object[] stockMovement2 = {product3, 3L};
 
-        when(productRepo.findAll()).thenReturn(List.of(product));
-        when(movementRepo.findByProduct(product)).thenReturn(movements);
+        Collection<Object[]> objects= new ArrayList<>();
+        objects.add(stockMovement1);
+        objects.add(stockMovement2);
+
+        when(movementRepo.findTurnoverGrouped(MovementType.OUT)).thenReturn(objects);
 
         Map<Product, Long> turnover = stockService.calculateTurnover();
 
