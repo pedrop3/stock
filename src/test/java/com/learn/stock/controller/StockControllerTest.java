@@ -101,8 +101,6 @@ class StockControllerTest {
         );
         when(productMapper.toDtoList(productList)).thenReturn(productDTOList);
 
-
-        // Performing the GET request and asserting the response
         mockMvc.perform(MockMvcRequestBuilders.get("/api/stocks/obsolete"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
@@ -114,14 +112,26 @@ class StockControllerTest {
 
 
     @Test
-    @DisplayName("GET /api/stocks/turnover should return turnover list")
+    @DisplayName("GET /api/stocks/turnover should return turnover DTO list")
     void testTurnover() throws Exception {
-        TurnoverDTO turnoverDTO = new TurnoverDTO(new ProductDTO("Pen", 5, 50, 20, false), 8L);
-        when(stockService.calculateTurnover()).thenReturn(Map.of());
-        when(productMapper.toDto(any())).thenReturn(turnoverDTO.product());
+        Product product = new Product(1L, "Pen", 5, 50, 20, false);
+        ProductDTO productDTO = new ProductDTO("Pen", 5, 50, 20, false);
+        Long turnoverValue = 8L;
+
+        when(stockService.calculateTurnover()).thenReturn(Map.of(product, turnoverValue));
+        when(productMapper.toDto(product)).thenReturn(productDTO);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/stocks/turnover"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].product.name").value("Pen"))
+                .andExpect(jsonPath("$[0].product.minStockLevel").value(5))
+                .andExpect(jsonPath("$[0].product.maxStockLevel").value(50))
+                .andExpect(jsonPath("$[0].product.currentStock").value(20))
+                .andExpect(jsonPath("$[0].product.obsolete").value(false))
+                .andExpect(jsonPath("$[0].count").value(8));
+
+        verify(stockService).calculateTurnover();
+        verify(productMapper).toDto(product);
     }
 
     @Test
