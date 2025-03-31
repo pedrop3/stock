@@ -1,58 +1,100 @@
-# 📦 Stock Management – Functional Requirements
+# 📦 Stock Management System – README
 
-This document outlines the key functional requirements for stock management to optimize control, replenishment, and inventory analysis processess
+## 🧾 Project Overview
 
-## 🔄 Stock Movement Records
-
-- Record all **product inflows and outflows**, including:
-    - Sales
-    - Customer returns
-    - Transfers between warehouses
-- Maintain a **comprehensive and detailed history** of all movements.
-- The history should be available for **auditing** and **future analysis**.
+This project is a complete stock management system built with Java and Spring Boot. It offers precise control over product inventory, tracking stock movements, analyzing turnover, managing ABC classification, and ensuring stock level efficiency.
 
 ---
 
-## 📊 Minimum and Maximum Stock Management
+## 🚀 Features
 
-- Define for each product:
-    - **Minimum level**: to avoid stockouts.
-    - **Maximum level**: to prevent overstocking.
-- Implement **automated systems** for:
-    - Monitoring stock levels
-    - Generating alerts when thresholds are reached
+### 🔄 Stock Movement
+- Handles product inflows and outflows.
+- Keeps a detailed and auditable movement history.
 
----
+### 📊 Minimum and Maximum Stock Management
+- Defines minimum and maximum stock levels per product.
+- Sends alerts when stock reaches critical thresholds.
 
-## 🔁 Product Turnover Analysis
+### 🔁 Turnover Analysis
+- Analyzes product sales frequency.
+- Helps categorize high-turnover and low-turnover items.
 
-- Track the **sales frequency** of each item.
-- Classify products as:
-    - **High turnover**: frequently sold
-    - **Low turnover**: rarely sold
-- Adjust strategies for:
-    - **Purchasing**
-    - **Promotion**
-- Prioritize **high-demand** products in decision-making.
+### 📈 ABC Curve Classification
+- Classifies products into:
+  - A: Most valuable
+  - B: Intermediate
+  - C: Low-value
+- Enhances decision-making and focus on Class A items.
 
----
-
-## 📈 ABC Curve Implementation
-
-- Classify products based on **importance and sales volume**:
-    - **Class A**: Most valuable items – ensure availability and tight control
-    - **Class B**: Intermediate importance – moderate control
-    - **Class C**: Lower value – simplified management
-- Focus management efforts on **Class A** products to ensure stock efficiency.
+### 🛑 Obsolete Product Management
+- Identifies and handles slow-moving or outdated products.
 
 ---
 
-## 🛑 Obsolete or Slow-Moving Stock Management
+## 🧠 Architecture & Design
 
-- Identify products with:
-    - **Low turnover**
-    - **Obsolescence**
-- Implement strategies to reduce this stock, such as:
-    - Promotions
-    - Progressive discounts
-    - Returns to suppliers
+- 📐 **Clean Layered Architecture**: Separation of concerns between controller, service, repository, and domain.
+- 🔌 **Strategy Pattern**: Used to process different types of stock movements (IN, OUT).
+- 🔍 **OpenAPI (Swagger)**: Auto-generated API documentation for testing and integration.
+- ✅ **Testing**:
+  - Unit tests for services and strategies.
+  - Integration tests for controller and exception handling.
+  - HTML reports generated in `build/reports/tests/test/index.html`.
+
+---
+
+## 🧪 Running the Project with Docker
+
+### 🐳 Prerequisites
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+
+### 🛠️ Setup
+Use the `docker-compose.yml` file:
+
+### ▶️ Run the App
+```bash
+docker-compose up --build
+```
+
+---
+
+## 🌐 Accessing the Application
+
+- Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- H2 Console (if enabled): [http://localhost:8080/h2-console](http://localhost:8080/h2-console)
+
+---
+
+## 👨‍💻 Technologies
+- Java 21
+- Spring Boot
+- JPA / Hibernate
+- PostgreSQL
+- Swagger / OpenAPI
+- JUnit / Mockito
+- Docker / Docker Compose
+
+---
+
+## 📂 Project Structure
+```
+src
+├── main
+│   ├── java/com/learn/stock
+│   │   ├── controller
+│   │   ├── model
+│   │   ├── repository
+│   │   ├── service
+│   │   ├── strategy
+│   │   └── factory
+│   └── resources
+│       └── db/migration
+└── test/java/com/learn/stock
+```
+
+---
+
+## ✅ Author
+Pedro Santos
