@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: insert-initial-data-products
+      author: Pedro Santos
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/insert.sql
+            encoding: utf8
+            splitStatements: false
+            stripComments: true
+
+src/main/resources/db/changelog/db:

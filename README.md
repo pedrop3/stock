@@ -40,7 +40,6 @@ This project is a complete stock management system built with Java and Spring Bo
 - ✅ **Testing**:
   - Unit tests for services and strategies.
   - Integration tests for controller and exception handling.
-  - HTML reports generated in `build/reports/tests/test/index.html`.
 
 ---
 
@@ -74,6 +73,7 @@ docker-compose up --build
 - PostgreSQL
 - Swagger / OpenAPI
 - JUnit / Mockito
+- Liquibase
 - Docker / Docker Compose
 
 ---
