@@ -4,12 +4,13 @@ import com.learn.stock.factory.MovementStrategyFactory;
 import com.learn.stock.model.MovementType;
 import com.learn.stock.model.Product;
 import com.learn.stock.model.StockMovement;
-import com.learn.stock.repository.ProductRepository;
-import com.learn.stock.repository.StockMovementRepository;
 import com.learn.stock.response.StockMovementRequest;
+import com.learn.stock.service.ProductService;
+import com.learn.stock.service.StockMovementService;
 import com.learn.stock.service.StockService;
 import com.learn.stock.strategy.MovementTypeStrategy;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,33 +18,30 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockServiceImpl implements StockService {
 
-    private final ProductRepository productRepo;
-    private final StockMovementRepository movementRepo;
+    private final ProductService productService;
+    private final StockMovementService stockMovementService;
     private final MovementStrategyFactory strategyFactory;
+
 
     @Transactional
     public void recordMovement(StockMovementRequest stockMovementRequest) {
-        Product product = productRepo.findById(stockMovementRequest.productId()).orElseThrow();
+        log.info("Recording stock movement: {}", stockMovementRequest);
+
+        Product product = productService.findByIdWithLock(stockMovementRequest.productId());
 
         if (product.getCurrentStock() < stockMovementRequest.quantity()) {
             throw new IllegalArgumentException("Insufficient stock for this operation.");
         }
 
-        StockMovement movement = StockMovement.builder()
-                .product(product)
-                .quantity(stockMovementRequest.quantity())
-                .dateTime(LocalDateTime.now())
-                .type(stockMovementRequest.type())
-                .build();
+        StockMovement movement = getStockMovement(stockMovementRequest, product);
 
-        movementRepo.save(movement);
+        stockMovementService.save(movement);
 
         MovementTypeStrategy strategy = strategyFactory.getStrategy(stockMovementRequest.type());
 
@@ -51,29 +49,24 @@ public class StockServiceImpl implements StockService {
             strategy.updateStock(product, stockMovementRequest.quantity());
         }
 
-        productRepo.save(product);
+        productService.save(product);
+        log.info("Stock movement recorded successfully for product: {}", product.getId());
     }
 
+
     public List<Product> checkStockAlerts() {
-        return productRepo.findAll().stream().
-                filter(p -> p.getCurrentStock() < p.getMinStockLevel() ||
-                        p.getCurrentStock() > p.getMaxStockLevel())
-                .toList();
+        return productService.findWithStockAlerts();
     }
 
     public List<Product> getObsoleteProducts() {
-        return productRepo.findAll().stream().filter(Product::isObsolete).toList();
+        return productService.findAll()
+                .stream()
+                .filter(Product::isObsolete)
+                .toList();
     }
 
     public Map<Product, Long> calculateTurnover() {
-        return movementRepo.findTurnoverGrouped(MovementType.OUT)
-                .stream()
-                .collect(Collectors.toMap(
-                                productLongEntry -> (Product) productLongEntry[0],
-                                productLongEntry -> (Long) productLongEntry[1]
-                        )
-                );
-
+        return stockMovementService.findTurnoverGrouped(MovementType.OUT);
     }
 
     public Map<String, List<Product>> classifyABC() {
@@ -94,5 +87,16 @@ public class StockServiceImpl implements StockService {
         abcMap.put("C", sorted.subList(bEnd, total).stream().map(Map.Entry::getKey).toList());
 
         return abcMap;
+    }
+
+    private StockMovement getStockMovement(StockMovementRequest stockMovementRequest, Product product) {
+        StockMovement movement = StockMovement.builder()
+                .product(product)
+                .quantity(stockMovementRequest.quantity())
+                .dateTime(LocalDateTime.now())
+                .type(stockMovementRequest.type())
+                .build();
+
+        return movement;
     }
 }

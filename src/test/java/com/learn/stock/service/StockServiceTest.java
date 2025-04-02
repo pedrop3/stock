@@ -5,9 +5,9 @@ import com.learn.stock.factory.MovementStrategyFactory;
 import com.learn.stock.model.MovementType;
 import com.learn.stock.model.Product;
 import com.learn.stock.model.StockMovement;
-import com.learn.stock.repository.ProductRepository;
-import com.learn.stock.repository.StockMovementRepository;
 import com.learn.stock.response.StockMovementRequest;
+import com.learn.stock.service.impl.ProductServiceImpl;
+import com.learn.stock.service.impl.StockMovementServiceImpl;
 import com.learn.stock.service.impl.StockServiceImpl;
 import com.learn.stock.strategy.MovementTypeStrategy;
 import org.junit.jupiter.api.Assertions;
@@ -30,10 +30,10 @@ class StockServiceTest {
     private StockServiceImpl stockService;
 
     @Mock
-    ProductRepository productRepo;
+    ProductServiceImpl productService;
 
     @Mock
-    StockMovementRepository movementRepo;
+    StockMovementServiceImpl stockMovementService;
 
     @Mock
     MovementStrategyFactory strategyFactory;
@@ -44,14 +44,14 @@ class StockServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        stockService = new StockServiceImpl(productRepo, movementRepo, strategyFactory);
+        stockService = new StockServiceImpl(productService, stockMovementService, strategyFactory);
     }
 
 
     @Test
     void givenInMovement_whenRecordMovement_thenStockIncreasesAndMovementSaved() {
         Product product = createProduct(1L, "Blue Pen", 5, 10, 10, false);
-        when(productRepo.findById(1L)).thenReturn(Optional.of(product));
+        when(productService.findByIdWithLock(1L)).thenReturn(product);
         when(strategyFactory.getStrategy(MovementType.IN)).thenReturn(inStrategy);
 
         simulateStockIncrease();
@@ -59,12 +59,12 @@ class StockServiceTest {
         stockService.recordMovement(createMovementRequest(1L, 5, MovementType.IN));
 
         assertEquals(15, product.getCurrentStock());
-        verify(productRepo).save(product);
-        verify(movementRepo).save(any(StockMovement.class));
+        verify(productService).save(product);
+        verify(stockMovementService).save(any(StockMovement.class));
 
         ArgumentCaptor<StockMovement> movementCaptor = ArgumentCaptor.forClass(StockMovement.class);
 
-        verify(movementRepo).save(movementCaptor.capture());
+        verify(stockMovementService).save(movementCaptor.capture());
         StockMovement savedMovement = movementCaptor.getValue();
 
         assertEquals(1L, savedMovement.getProduct().getId());
@@ -75,7 +75,7 @@ class StockServiceTest {
     @Test
     void givenOutMovement_whenRecordMovement_thenStockDecreasesAndMovementSaved() {
         Product product = createProduct(1L, "Blue Pen", 5, 10, 10, false);
-        when(productRepo.findById(1L)).thenReturn(Optional.of(product));
+        when(productService.findByIdWithLock(1L)).thenReturn(product);
         when(strategyFactory.getStrategy(MovementType.OUT)).thenReturn(inStrategy);
 
         simulateStockDecrease();
@@ -83,14 +83,14 @@ class StockServiceTest {
         stockService.recordMovement(createMovementRequest(1L, 3, MovementType.OUT));
 
         assertEquals(7, product.getCurrentStock());
-        verify(productRepo).save(product);
-        verify(movementRepo).save(any(StockMovement.class));
+        verify(productService).save(product);
+        verify(stockMovementService).save(any(StockMovement.class));
     }
 
     @Test
     void givenExcessiveOutMovement_whenRecordMovement_thenThrowsIllegalArgumentException() {
         Product product = createProduct(1L, "Blue Pen", 5, 10, 10, false);
-        when(productRepo.findById(1L)).thenReturn(Optional.of(product));
+        when(productService.findByIdWithLock(1L)).thenReturn(product);
         when(strategyFactory.getStrategy(MovementType.OUT)).thenReturn(inStrategy);
 
         // Simula estratégia que lança exceção ao tentar tirar mais do que o estoque atual
@@ -110,29 +110,7 @@ class StockServiceTest {
         );
     }
 
-    @Test
-    void givenInvalidProductId_whenRecordMovement_thenThrowsNoSuchElementException() {
-        when(productRepo.findById(99L)).thenReturn(Optional.empty());
-        var stockMovementRequest = new StockMovementRequest(99L, 10, MovementType.IN);
 
-        Assertions.assertThrows(NoSuchElementException.class, () ->
-                stockService.recordMovement(stockMovementRequest));
-    }
-
-    @Test
-    void givenProducts_whenCheckStockAlerts_thenReturnLowAndHighOnly() {
-        Product low = createProduct(1L, "Low", 10, 50, 5, false);
-        Product high = createProduct(2L, "High", 10, 50, 60, false);
-        Product ok = createProduct(3L, "Ok", 10, 50, 30, false);
-
-        when(productRepo.findAll()).thenReturn(List.of(low, high, ok));
-
-        List<Product> alerts = stockService.checkStockAlerts();
-
-        assertEquals(2, alerts.size());
-        assertTrue(alerts.contains(low));
-        assertTrue(alerts.contains(high));
-    }
 
 
     @Test
@@ -141,7 +119,7 @@ class StockServiceTest {
         Product obs2 = createProduct(2L, "Obs2", 10, 50, 15, true);
         Product normal = createProduct(3L, "Normal", 10, 50, 25, false);
 
-        when(productRepo.findAll()).thenReturn(List.of(obs1, obs2, normal));
+        when(productService.findAll()).thenReturn(List.of(obs1, obs2, normal));
 
         List<Product> obsolete = stockService.getObsoleteProducts();
 
@@ -155,13 +133,17 @@ class StockServiceTest {
         Product p1 = createProduct(1L, "P1", 10, 20, 40, false);
         Product p2 = createProduct(2L, "P2", 10, 20, 40, false);
 
-        when(movementRepo.findTurnoverGrouped(MovementType.OUT))
-                .thenReturn(List.of(new Object[]{p1, 2L}, new Object[]{p2, 3L}));
+        Map<Product, Long>  mockData = new HashMap<>();
+        mockData.put(p1, 1L);
+        mockData.put(p2, 2L);
+
+        when(stockMovementService.findTurnoverGrouped(MovementType.OUT))
+                .thenReturn(mockData);
 
         Map<Product, Long> turnover = stockService.calculateTurnover();
 
-        assertEquals(2L, turnover.get(p1));
-        assertEquals(3L, turnover.get(p2));
+        assertEquals(2L, turnover.size());
+        verify(stockMovementService).findTurnoverGrouped(MovementType.OUT);
     }
 
     @Test
@@ -208,13 +190,13 @@ class StockServiceTest {
     }
 
     private void simulateTurnover(Product... products) {
-        List<Object[]> mockData = new ArrayList<>();
+        Map<Product, Long>  mockData = new HashMap<>();
         long qty = 50;
         for (Product p : products) {
-            mockData.add(new Object[]{p, qty});
+            mockData.put(p, qty);
             qty -= 10;
         }
-        when(movementRepo.findTurnoverGrouped(MovementType.OUT)).thenReturn(mockData);
+        when(stockMovementService.findTurnoverGrouped(MovementType.OUT)).thenReturn(mockData);
     }
 
 }
