@@ -3,13 +3,16 @@ package com.learn.stock.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
+
 @Entity
 @Getter @Setter
 @EqualsAndHashCode
 @Builder
 @AllArgsConstructor @NoArgsConstructor
 @Table(name = "product")
-public class Product {
+public class Product implements Serializable {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
