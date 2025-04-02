@@ -18,6 +18,13 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
 ---
 spring:
+  cache:
+    type: redis
+    data:
+      redis:
+        host: localhost
+        port: 6379
+
   config:
     activate:
       on-profile: dev
