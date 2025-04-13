@@ -6,13 +6,16 @@ import com.learn.stock.model.MovementType;
 import com.learn.stock.model.Product;
 import com.learn.stock.response.ProductDTO;
 import com.learn.stock.response.StockMovementRequest;
-import com.learn.stock.response.TurnoverDTO;
 import com.learn.stock.service.StockService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -88,29 +91,41 @@ class StockControllerTest {
 
 
     @Test
-    @DisplayName("GET /api/stocks/obsolete should return obsolete product list")
-    void getObsoletesShouldReturnProductDTOList() throws Exception {
+    @DisplayName("GET /api/stocks/obsolete should return paginated list of obsolete ProductDTOs")
+    void getObsoletesShouldReturnPaginatedProductDTOList() throws Exception {
 
         List<Product> productList = List.of(
-                new Product(1L,"Obsolete Product 1", 5, 30, 0, true),
-                new Product(2L,"Obsolete Product 2", 5, 40, 1, true)
+                new Product(1L, "Obsolete Product 1", 5, 30, 0, true),
+                new Product(2L, "Obsolete Product 2", 5, 40, 1, true)
         );
-        when(stockService.getObsoleteProducts()).thenReturn(productList);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Product> productPage = new PageImpl<>(productList, pageable, productList.size());
 
-        List<ProductDTO> productDTOList = Arrays.asList(
+        when(stockService.getObsoleteProducts(any(Pageable.class))).thenReturn(productPage);
+
+        List<ProductDTO> productDTOList = List.of(
                 new ProductDTO("Obsolete Product 1", 5, 30, 0, true),
                 new ProductDTO("Obsolete Product 2", 5, 40, 1, true)
         );
-        when(productMapper.toDtoList(productList)).thenReturn(productDTOList);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/stocks/obsolete"))
+        when(productMapper.toDto(productList.get(0))).thenReturn(productDTOList.get(0));
+        when(productMapper.toDto(productList.get(1))).thenReturn(productDTOList.get(1));
+
+        // Act & Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/stocks/obsolete")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().json(objectMapper.writeValueAsString(productDTOList)));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.content.length()").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.content[0].name").value("Obsolete Product 1"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.content[1].name").value("Obsolete Product 2"));
 
-        verify(stockService, times(1)).getObsoleteProducts();
-        verify(productMapper, times(1)).toDtoList(productList);
+        verify(stockService, times(1)).getObsoleteProducts(any(Pageable.class));
+        verify(productMapper, times(1)).toDto(productList.get(0));
+        verify(productMapper, times(1)).toDto(productList.get(1));
     }
+
 
 
     @Test

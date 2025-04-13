@@ -3,8 +3,9 @@ package com.learn.stock.service.impl;
 import com.learn.stock.model.Product;
 import com.learn.stock.repository.ProductRepository;
 import com.learn.stock.service.ProductService;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,7 +32,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> findAll() {
-        return productRepository.findAll();
+    public Page<Product> findAll(Pageable pageable) {
+        return productRepository.findAll(pageable);
+    }
+
+    @Override
+    public Page<Product> findByObsolete(Pageable pageable) {
+        return productRepository.findByObsoleteIsTrue(pageable);
     }
 }

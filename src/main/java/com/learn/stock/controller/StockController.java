@@ -7,6 +7,9 @@ import com.learn.stock.response.TurnoverDTO;
 import com.learn.stock.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,8 +39,12 @@ public class StockController {
 
     @Operation(summary = "Get obsolete or slow-moving products")
     @GetMapping("/obsolete")
-    public ResponseEntity<List<ProductDTO>> getObsoletes() {
-        return ResponseEntity.ok(productMapper.toDtoList(stockService.getObsoleteProducts()));
+    public ResponseEntity<Page<ProductDTO>> getObsoletes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(stockService.getObsoleteProducts(pageable).map(productMapper::toDto));
     }
 
     @Operation(summary = "Get turnover report for products")

@@ -2,6 +2,8 @@ package com.learn.stock.repository;
 
 import com.learn.stock.model.Product;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +20,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p WHERE p.currentStock < p.minStockLevel OR p.currentStock > p.maxStockLevel")
     List<Product> findWithStockAlerts();
+
+    Page<Product> findByObsoleteIsTrue(Pageable pageable);
 }
