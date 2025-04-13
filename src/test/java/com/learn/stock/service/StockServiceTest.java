@@ -10,15 +10,20 @@ import com.learn.stock.service.impl.ProductServiceImpl;
 import com.learn.stock.service.impl.StockMovementServiceImpl;
 import com.learn.stock.service.impl.StockServiceImpl;
 import com.learn.stock.strategy.MovementTypeStrategy;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -119,13 +124,18 @@ class StockServiceTest {
         Product obs2 = createProduct(2L, "Obs2", 10, 50, 15, true);
         Product normal = createProduct(3L, "Normal", 10, 50, 25, false);
 
-        when(productService.findAll()).thenReturn(List.of(obs1, obs2, normal));
+        Pageable pageable = PageRequest.of(0, 10);
+        PageImpl page = new PageImpl<>(List.of(obs1, obs2));
 
-        List<Product> obsolete = stockService.getObsoleteProducts();
 
-        assertEquals(2, obsolete.size());
-        assertTrue(obsolete.contains(obs1));
-        assertTrue(obsolete.contains(obs2));
+        when(productService.findByObsolete(pageable)).thenReturn(page);
+
+        Page<Product> obsolete = stockService.getObsoleteProducts(pageable);
+
+        assertEquals(2, obsolete.getContent().size());
+        assertTrue(obsolete.getContent().contains(obs1));
+        assertTrue(obsolete.getContent().contains(obs2));
+        assertFalse(obsolete.getContent().contains(normal));
     }
 
     @Test

@@ -12,6 +12,8 @@ import com.learn.stock.strategy.MovementTypeStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,11 +62,8 @@ public class StockServiceImpl implements StockService {
     }
 
     @Cacheable(value = "obsoleteProducts")
-    public List<Product> getObsoleteProducts() {
-        return productService.findAll()
-                .stream()
-                .filter(Product::isObsolete)
-                .toList();
+    public Page<Product> getObsoleteProducts(Pageable pageable) {
+        return productService.findByObsolete(pageable);
     }
 
     public Map<Product, Long> calculateTurnover() {
@@ -94,13 +93,11 @@ public class StockServiceImpl implements StockService {
     }
 
     private StockMovement getStockMovement(StockMovementRequest stockMovementRequest, Product product) {
-        StockMovement movement = StockMovement.builder()
+        return StockMovement.builder()
                 .product(product)
                 .quantity(stockMovementRequest.quantity())
                 .dateTime(LocalDateTime.now())
                 .type(stockMovementRequest.type())
                 .build();
-
-        return movement;
     }
 }

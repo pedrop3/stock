@@ -14,7 +14,7 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
     List<StockMovement> findByProduct(Product product);
 
     @Query("""
-                SELECT m.product, COUNT(m)
+                SELECT m.product, COUNT(m)  
                 FROM StockMovement m
                 WHERE m.type = :type
                 GROUP BY m.product
