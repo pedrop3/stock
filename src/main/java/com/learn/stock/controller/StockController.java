@@ -1,11 +1,12 @@
 package com.learn.stock.controller;
 
 import com.learn.stock.mapper.ProductMapper;
+import com.learn.stock.response.AgentResponseDTO;
 import com.learn.stock.response.ProductDTO;
 import com.learn.stock.response.StockMovementRequest;
 import com.learn.stock.response.TurnoverDTO;
 import com.learn.stock.service.StockService;
-import com.learn.stock.service.agent.AnalysisAgentService;
+import com.learn.stock.service.ai.OrchestratorAgentService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +25,7 @@ public class StockController {
 
     private final StockService stockService;
     private final ProductMapper productMapper;
-    private final AnalysisAgentService abcAnalysisAgentService;
+    private final OrchestratorAgentService abcAnalysisAgentService;
 
     @Operation(summary = "Register a stock movement")
     @PostMapping("/movement")
@@ -70,7 +71,7 @@ public class StockController {
     }
 
     @GetMapping("/chat")
-    public String getChat(@RequestParam(name = "question") String question) {
+    public AgentResponseDTO getChat(@RequestParam(name = "question") String question) {
         return abcAnalysisAgentService.runAgent(question);
     }
 }

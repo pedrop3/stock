@@ -1,5 +1,6 @@
 package com.learn.stock.config;
 
+import com.learn.stock.service.ai.TokenUsageListener;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,8 @@ public class AiModelConfig {
                 .numPredict(512)
                 .numCtx(4096)
                 .repeatPenalty(1.2)
-                .stop(endResponse)
+                //.stop(endResponse)
+                .listeners(List.of(new TokenUsageListener()))
                 .build();
     }
 
@@ -39,6 +41,9 @@ public class AiModelConfig {
                 .modelName(properties.getGemini().getModelName())
                 .logRequests(true)
                 .logResponses(true)
+                .logRequests(true)
+                .logResponses(true)
+                .temperature(0.0)
                 .build();
     }
 }
