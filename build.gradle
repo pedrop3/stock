@@ -17,36 +17,67 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    mapstructVersion = "1.5.5.Final"
+    langchainVersion = "1.11.0"
+    lombokVersion = "1.18.30"
+}
+
 dependencies {
-// Core Application Dependencies (Compile and Runtime)
+
+    // ===============================
+    // Spring Boot
+    // ===============================
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.projectlombok:lombok'
-    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // ===============================
+    // Documentation
+    // ===============================
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
 
-    // Compile-Time Dependencies (Not included in Runtime)
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-
-    // Annotation Processing Dependencies
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
-
-    // Runtime Dependencies
+    // ===============================
+    // Database
+    // ===============================
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'org.postgresql:postgresql'
-    implementation 'org.liquibase:liquibase-core'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
 
-    // Testing Dependencies
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
-    testImplementation 'org.mockito:mockito-core:5.12.0'
+    implementation 'org.liquibase:liquibase-core'
+
+    // ===============================
+    // Lombok
+    // ===============================
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    // ===============================
+    // MapStruct
+    // ===============================
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+    // ===============================
+    // AI / LangChain4j
+    // ===============================
+    implementation "dev.langchain4j:langchain4j:${langchainVersion}"
+    implementation "dev.langchain4j:langchain4j-core:${langchainVersion}"
+    implementation "dev.langchain4j:langchain4j-open-ai:${langchainVersion}"
+    implementation "dev.langchain4j:langchain4j-ollama:${langchainVersion}"
+    implementation "dev.langchain4j:langchain4j-google-ai-gemini:${langchainVersion}"
+
+
+    // Agentic (beta)
+    implementation "dev.langchain4j:langchain4j-agentic:1.11.0-beta19"
+
+    // ===============================
+    // Tests
+    // ===============================
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.12.0'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
 }
-
