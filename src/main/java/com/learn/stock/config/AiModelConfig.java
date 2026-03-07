@@ -7,12 +7,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
 public class AiModelConfig {
 
     private final AiProperties properties;
+    private final List<String> endResponse = List.of("<|endoftext|>", "<|im_end|>", "\\n\\n\\n");
 
     @Bean
     public OllamaChatModel ollamaChatModel() {
@@ -22,6 +24,11 @@ public class AiModelConfig {
                 .timeout(Duration.ofSeconds(properties.getOllama().getTimeout()))
                 .logRequests(true)
                 .logResponses(true)
+                .temperature(0.0)
+                .numPredict(512)
+                .numCtx(4096)
+                .repeatPenalty(1.2)
+                .stop(endResponse)
                 .build();
     }
 
@@ -30,6 +37,8 @@ public class AiModelConfig {
         return GoogleAiGeminiChatModel.builder()
                 .apiKey(properties.getGemini().getApiKey())
                 .modelName(properties.getGemini().getModelName())
+                .logRequests(true)
+                .logResponses(true)
                 .build();
     }
 }
