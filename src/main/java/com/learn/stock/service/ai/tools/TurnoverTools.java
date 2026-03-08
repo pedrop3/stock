@@ -2,6 +2,7 @@ package com.learn.stock.service.ai.tools;
 
 import com.learn.stock.model.Product;
 import com.learn.stock.service.StockService;
+import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -24,9 +25,15 @@ public class TurnoverTools {
         Returns: products grouped by category based on outbound movement volume.
         """
     )
-    public String getAbcClassification() {
+    public String getAbcClassification(@P("category filter: A, B, C or ALL") String category) {
 
         Map<String, List<Product>> abc = stockService.classifyABC();
+
+        if (!"ALL".equalsIgnoreCase(category)) {
+            abc = abc.entrySet().stream()
+                    .filter(e -> e.getKey().equalsIgnoreCase(category))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
 
         StringBuilder sb = new StringBuilder("RESULT: Current ABC classification:\n");
 
@@ -58,9 +65,12 @@ public class TurnoverTools {
             When to use: questions about "stock turnover", "best selling products",
             "most moved products", "outbound ranking", "inventory turnover".
             DO NOT use for: checking current stock, ABC classification or alerts.
-            Returns: top 10 products ordered by number of outbound movements.
+            Returns: top N products ordered by number of outbound movements.
+            Default N is 10 if not specified by the user.
             """)
-    public String getTurnoverSummary() {
+    public String getTurnoverSummary(@P("Number of top products to return: 5, 10 or 20") int limit) {
+
+        int safeLimit = (limit == 5 || limit == 10 || limit == 20) ? limit : 10;
 
         Map<Product, Long> turnover = stockService.calculateTurnover();
 
@@ -70,7 +80,7 @@ public class TurnoverTools {
 
         String result = turnover.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
-                .limit(10)
+                .limit(safeLimit)
                 .map(e -> String.format(
                         "  - %-25s -> %d outbound movements",
                         e.getKey().getName(),

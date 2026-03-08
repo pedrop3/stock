@@ -4,6 +4,7 @@ import com.learn.stock.model.Product;
 import com.learn.stock.repository.ProductRepository;
 import com.learn.stock.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
 
     @Override
+    @Cacheable(value = "findWithStockAlerts")
     public List<Product> findWithStockAlerts() {
         return productRepository.findWithStockAlerts();
     }
@@ -32,6 +34,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = "products")
     public Page<Product> findAll(Pageable pageable) {
         return productRepository.findAll(pageable);
     }

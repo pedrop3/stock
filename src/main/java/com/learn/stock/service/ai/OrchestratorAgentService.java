@@ -25,11 +25,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrchestratorAgentService {
 
     private final Map<String, ChatMemory> memoryStore = new ConcurrentHashMap<>();
+    private final Map<String, OrchestratorAgent> orchestratorStore = new ConcurrentHashMap<>();
+
     private final StockTools stockTools;
     private final TurnoverTools turnoverTools;
     private final ObsoleteTools obsoleteTools;
     private final SubAgentTools subAgentTools;
     private final OllamaChatModel ollamaChatModel;
+    private final OllamaChatModel ollamaChatModelWithOutThinking;
     private final GoogleAiGeminiChatModel geminiChatModel;
 
     private OrchestratorAgent orchestratorAgent;
@@ -40,19 +43,19 @@ public class OrchestratorAgentService {
 
         // Each subagent gets ONLY its own ToolProvider
         StockAgent stockAgent = AiServices.builder(StockAgent.class)
-                .chatModel(ollamaChatModel)
+                .chatModel(ollamaChatModelWithOutThinking)
                 .toolProvider(new AgentToolProvider(stockTools))   // ← ToolProvider here
                 .maxSequentialToolsInvocations(2)
                 .build();
 
         TurnoverAgent turnoverAgent = AiServices.builder(TurnoverAgent.class)
-                .chatModel(ollamaChatModel)
+                .chatModel(ollamaChatModelWithOutThinking)
                 .toolProvider(new AgentToolProvider(turnoverTools)) // ← ToolProvider here
                 .maxSequentialToolsInvocations(2)
                 .build();
 
         ObsoleteAgent obsoleteAgent = AiServices.builder(ObsoleteAgent.class)
-                .chatModel(ollamaChatModel)
+                .chatModel(ollamaChatModelWithOutThinking)
                 .toolProvider(new AgentToolProvider(obsoleteTools)) // ← ToolProvider here
                 .maxSequentialToolsInvocations(2)
                 .build();
@@ -60,13 +63,6 @@ public class OrchestratorAgentService {
         // Inject built subagents into the wrapper so the orchestrator can call them
         // (if SubAgentTools receives them via constructor/setter)
         subAgentTools.setAgents(stockAgent, turnoverAgent, obsoleteAgent);
-
-        // Build orchestrator once (stateless — memory handled per request)
-        orchestratorAgent = AiServices.builder(OrchestratorAgent.class)
-                .chatModel(ollamaChatModel)
-                .tools(subAgentTools)
-                .maxSequentialToolsInvocations(10)
-                .build();
     }
 
     public AgentResponseDTO runAgent(String userQuestion) {
@@ -77,18 +73,20 @@ public class OrchestratorAgentService {
         String answer = null;
 
         try {
-            ChatMemory memory = memoryStore.computeIfAbsent(
-                    "userID", id -> MessageWindowChatMemory.withMaxMessages(10));
+            OrchestratorAgent orchestrator = orchestratorStore.computeIfAbsent(
+                    "userID", id -> {
+                        ChatMemory memory = memoryStore.computeIfAbsent(
+                                id, k -> MessageWindowChatMemory.withMaxMessages(10));
 
+                        return AiServices.builder(OrchestratorAgent.class)
+                                .chatModel(ollamaChatModel)
+                                .chatMemory(memory)
+                                .tools(subAgentTools)
+                                .maxSequentialToolsInvocations(3)
+                                .build();
+                    });
 
-            OrchestratorAgent orchestrator = AiServices.builder(OrchestratorAgent.class)
-                    .chatModel(ollamaChatModel)
-                    .chatMemory(memory)
-                    .tools(subAgentTools)
-                    .maxSequentialToolsInvocations(3)
-                    .build();
-
-            answer = orchestrator.analyze(userQuestion).getAnswer();
+            answer = orchestrator.analyze(userQuestion);
 
         } catch (Exception e) {
             isFallback = true;

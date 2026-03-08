@@ -27,8 +27,27 @@ public class AiModelConfig {
                 .logResponses(true)
                 .temperature(0.0)
                 .numPredict(512)
-                .numCtx(4096)
+                .numCtx(32768)
                 .repeatPenalty(1.2)
+                .think(true)
+                //.stop(endResponse)
+                .listeners(List.of(new TokenUsageListener()))
+                .build();
+    }
+
+    @Bean
+    public OllamaChatModel ollamaChatModelWithOutThinking() {
+        return OllamaChatModel.builder()
+                .baseUrl(properties.getOllama().getBaseUrl())
+                .modelName(properties.getOllama().getModelName())
+                .timeout(Duration.ofSeconds(properties.getOllama().getTimeout()))
+                .logRequests(true)
+                .logResponses(true)
+                .temperature(0.0)
+                .numPredict(512)
+                .numCtx(32768)
+                .repeatPenalty(1.2)
+                .think(false)
                 //.stop(endResponse)
                 .listeners(List.of(new TokenUsageListener()))
                 .build();

@@ -71,7 +71,7 @@ public class StockServiceImpl implements StockService {
     }
 
 
-    //@Cacheable(value = "abcClassification")
+    @Cacheable(value = "abcClassification")
     public Map<String, List<Product>> classifyABC() {
         var turnover = calculateTurnover();
         var sorted = turnover.entrySet()
