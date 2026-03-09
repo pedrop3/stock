@@ -11,6 +11,10 @@ ai:
     api-key: ${GEMINI_API_KEY}
     model-name: ${GEMINI_MODEL:gemini-2.5-flash}
 
+  claude:
+    api-key: ${CLAUDE_API_KEY}
+    model-name: ${CLAUDE_MODEL:claude-sonnet-4-20250514}
+
 ---
 spring:
   config:

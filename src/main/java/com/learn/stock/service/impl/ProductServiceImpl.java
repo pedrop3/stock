@@ -19,6 +19,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Cacheable(value = "findWithStockAlerts")
+    // We can mix database caching with LLM response caching.
+    // https://redis.io/docs/latest/develop/ai/
     public List<Product> findWithStockAlerts() {
         return productRepository.findWithStockAlerts();
     }

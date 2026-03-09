@@ -2,12 +2,15 @@ package com.learn.stock.service.ai.tools;
 
 import com.learn.stock.model.Product;
 import com.learn.stock.service.ProductService;
+import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -47,15 +50,29 @@ public class StockTools {
 
 
     @Tool("""
-        Action: Lists products with stock levels outside the defined limits (active alerts).
-        When to use: questions about "stock alerts", "critical stock",
-        "below minimum", "above maximum", "products with stock issues".
-        DO NOT use for: listing all products or ABC classification.
-        Returns: products with status BELOW_MINIMUM or ABOVE_MAXIMUM.
+    Action: Lists products with stock levels outside the defined limits (active alerts).
+    When to use: questions about "stock alerts", "critical stock",
+    "below minimum", "above maximum", "products with stock issues".
+    If a specific list of product names is provided, filter results to only those products.
+    DO NOT use for: listing all products or ABC classification.
+    Returns: products with status BELOW_MINIMUM or ABOVE_MAXIMUM.
     """)
-    public String getProductsWithAlerts() {
-
+    public String getProductsWithAlerts(
+            @P("Optional: comma-separated product names to filter alerts. Leave empty or null to return all alerts.")
+            String productNames
+    ) {
         List<Product> alerts = productService.findWithStockAlerts();
+
+        if (productNames != null && !productNames.isBlank()) {
+            Set<String> filter = Arrays.stream(productNames.split(","))
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
+
+            alerts = alerts.stream()
+                    .filter(p -> filter.contains(p.getName().toLowerCase()))
+                    .toList();
+        }
 
         if (alerts.isEmpty()) {
             return "RESULT: No products with stock alerts.";
@@ -63,9 +80,7 @@ public class StockTools {
 
         String list = alerts.stream()
                 .map(p -> {
-
                     boolean below = p.getCurrentStock() < p.getMinStockLevel();
-
                     return String.format(
                             "  - %s | %s | current: %d | limit: %d",
                             p.getName(),
@@ -76,6 +91,6 @@ public class StockTools {
                 })
                 .collect(Collectors.joining("\n"));
 
-        return String.format("RESULT: %d product(s) with alerts: %s", alerts.size(), list);
+        return String.format("RESULT: %d product(s) with alerts:\n%s", alerts.size(), list);
     }
 }

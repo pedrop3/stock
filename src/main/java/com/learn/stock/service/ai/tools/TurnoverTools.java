@@ -7,8 +7,10 @@ import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -18,21 +20,39 @@ public class TurnoverTools {
     private final StockService stockService;
 
     @Tool(value = """
-        Action: Returns the ABC classification grouping products into categories A, B and C.
-        When to use: questions about "ABC classification", "category A", "category B",
-        "category C", "ABC curve", "product priority".
-        DO NOT use for: simple stock listing, alerts or turnover analysis.
-        Returns: products grouped by category based on outbound movement volume.
-        """
-    )
-    public String getAbcClassification(@P("category filter: A, B, C or ALL") String category) {
+    Action: Returns the ABC classification grouping products into categories A, B and C.
+    When to use: questions about "ABC classification", "category A", "category B",
+    "category C", "ABC curve", "product priority".
+    DO NOT use for: simple stock listing, alerts or turnover analysis.
+    Returns: products grouped by category based on outbound movement volume.
+    IMPORTANT: To filter multiple categories, pass them comma-separated: "B,C" or "A,B".
+    Use "ALL" only when all categories are needed. Never call this tool multiple times
+    for the same question.
+    """)
+    public String getAbcClassification(
+            @P("Category filter: A, B, C, comma-separated like B,C, or ALL") String category) {
 
         Map<String, List<Product>> abc = stockService.classifyABC();
 
-        if (!"ALL".equalsIgnoreCase(category)) {
-            abc = abc.entrySet().stream()
-                    .filter(e -> e.getKey().equalsIgnoreCase(category))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Set<String> requestedCategories = Arrays.stream(category.split("[,;\\s]+"))
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .filter(s -> Set.of("A", "B", "C").contains(s))
+                .collect(Collectors.toSet());
+
+        // Fallback: ALL or invalid input → return everything
+        if (requestedCategories.isEmpty() || category.equalsIgnoreCase("ALL")) {
+            requestedCategories = Set.of("A", "B", "C");
+        }
+
+        final Set<String> finalCategories = requestedCategories;
+
+        abc = abc.entrySet().stream()
+                .filter(e -> finalCategories.contains(e.getKey().toUpperCase()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (abc.isEmpty()) {
+            return "RESULT: No products found for the requested categories.";
         }
 
         StringBuilder sb = new StringBuilder("RESULT: Current ABC classification:\n");
@@ -46,7 +66,6 @@ public class TurnoverTools {
             if (entry.getValue().isEmpty()) {
                 sb.append("  (no products)\n");
             } else {
-
                 entry.getValue().forEach(p ->
                         sb.append(String.format(
                                 "  - %s (stock: %d)%n",

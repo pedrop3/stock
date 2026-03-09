@@ -1,6 +1,8 @@
 package com.learn.stock.config;
 
 import com.learn.stock.service.ai.TokenUsageListener;
+import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.googleai.GeminiThinkingConfig;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import lombok.RequiredArgsConstructor;
@@ -60,9 +62,28 @@ public class AiModelConfig {
                 .modelName(properties.getGemini().getModelName())
                 .logRequests(true)
                 .logResponses(true)
+                .temperature(0.0)
+                .topP(0.8)
+                .maxOutputTokens(1024)
+                .thinkingConfig(GeminiThinkingConfig.builder()
+                        .includeThoughts(true)
+                        .thinkingBudget(512)
+                        .build())
+                .build();
+    }
+
+    @Bean
+    public AnthropicChatModel anthropicChatModel(){
+        return AnthropicChatModel.builder()
+                .apiKey(properties.getClaude().getApiKey())
+                .modelName(properties.getClaude().getModelName())
                 .logRequests(true)
                 .logResponses(true)
                 .temperature(0.0)
+                .timeout(Duration.ofSeconds(60))
+                .listeners(List.of(new TokenUsageListener()))
                 .build();
     }
+
+
 }

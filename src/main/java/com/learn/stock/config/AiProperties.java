@@ -9,6 +9,8 @@ public class AiProperties {
 
     private Ollama ollama;
     private Gemini gemini;
+    private Claude claude;
+
 
     @Data
     public static class Ollama {
@@ -19,6 +21,12 @@ public class AiProperties {
 
     @Data
     public static class Gemini {
+        private String apiKey;
+        private String modelName;
+    }
+
+    @Data
+    public static class Claude {
         private String apiKey;
         private String modelName;
     }

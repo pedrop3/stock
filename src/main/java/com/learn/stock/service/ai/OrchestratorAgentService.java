@@ -10,6 +10,7 @@ import com.learn.stock.service.ai.tools.SubAgentTools;
 import com.learn.stock.service.ai.tools.TurnoverTools;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.output.TokenUsage;
@@ -34,6 +35,7 @@ public class OrchestratorAgentService {
     private final OllamaChatModel ollamaChatModel;
     private final OllamaChatModel ollamaChatModelWithOutThinking;
     private final GoogleAiGeminiChatModel geminiChatModel;
+    private final AnthropicChatModel anthropicChatModel;
 
     private OrchestratorAgent orchestratorAgent;
 
@@ -79,7 +81,7 @@ public class OrchestratorAgentService {
                                 id, k -> MessageWindowChatMemory.withMaxMessages(10));
 
                         return AiServices.builder(OrchestratorAgent.class)
-                                .chatModel(ollamaChatModel)
+                                .chatModel(geminiChatModel)
                                 .chatMemory(memory)
                                 .tools(subAgentTools)
                                 .maxSequentialToolsInvocations(3)
