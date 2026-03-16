@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<!-- saved from url=(0102)http://localhost:63342/stock/agent-flow.html?_ijt=9qbo9lot2jv4b5dq28jsk1bs1b&_ij_reload=RELOAD_ON_SAVE -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Flow — LangChain4j</title>
+    <link href="../../Downloads/Multi-Agent%20Flow%20—%20LangChain4j_files/css2" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0e1a;
+            --surface: #111827;
+            --border: #1e2d45;
+            --orchestrator: #0ea5e9;
+            --turnover: #a78bfa;
+            --stock: #34d399;
+            --tool: #f59e0b;
+            --db: #f87171;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --line: #1e3a5f;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Syne', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                    linear-gradient(rgba(14,165,233,0.04) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(14,165,233,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 48px 32px 64px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+
+        .tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            color: var(--orchestrator);
+            background: rgba(14,165,233,0.1);
+            border: 1px solid rgba(14,165,233,0.3);
+            padding: 4px 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: clamp(28px, 4vw, 48px);
+            font-weight: 800;
+            line-height: 1.1;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        h1 span { color: var(--orchestrator); }
+
+        .subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* ── LEGEND ── */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 48px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .legend-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+        }
+
+        /* ── FLOW ── */
+        .flow {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            align-items: center;
+        }
+
+        /* ROW */
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            width: 100%;
+            position: relative;
+        }
+
+        /* NODE */
+        .node {
+            border-radius: 12px;
+            padding: 16px 20px;
+            border: 1px solid;
+            position: relative;
+            min-width: 160px;
+            text-align: center;
+            cursor: default;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .node:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+        }
+
+        .node-label {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+            opacity: 0.7;
+        }
+
+        .node-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .node-sub {
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 4px;
+            opacity: 0.6;
+        }
+
+        /* Node variants */
+        .node-user {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.15);
+            min-width: 200px;
+        }
+        .node-user .node-title { color: #fff; }
+
+        .node-orchestrator {
+            background: rgba(14,165,233,0.08);
+            border-color: rgba(14,165,233,0.4);
+            min-width: 220px;
+            padding: 20px 24px;
+        }
+        .node-orchestrator .node-label { color: var(--orchestrator); }
+        .node-orchestrator .node-title { color: var(--orchestrator); font-size: 17px; }
+
+        .node-turnover {
+            background: rgba(167,139,250,0.08);
+            border-color: rgba(167,139,250,0.4);
+            min-width: 180px;
+        }
+        .node-turnover .node-label { color: var(--turnover); }
+        .node-turnover .node-title { color: var(--turnover); }
+
+        .node-stock {
+            background: rgba(52,211,153,0.08);
+            border-color: rgba(52,211,153,0.4);
+            min-width: 180px;
+        }
+        .node-stock .node-label { color: var(--stock); }
+        .node-stock .node-title { color: var(--stock); }
+
+        .node-obsolete {
+            background: rgba(100,116,139,0.08);
+            border-color: rgba(100,116,139,0.3);
+            min-width: 160px;
+            opacity: 0.5;
+        }
+        .node-obsolete .node-label { color: var(--muted); }
+        .node-obsolete .node-title { color: var(--muted); }
+
+        .node-tool {
+            background: rgba(245,158,11,0.08);
+            border-color: rgba(245,158,11,0.35);
+            min-width: 150px;
+            padding: 12px 16px;
+        }
+        .node-tool .node-label { color: var(--tool); }
+        .node-tool .node-title { color: var(--tool); font-size: 13px; }
+
+        .node-db {
+            background: rgba(248,113,113,0.08);
+            border-color: rgba(248,113,113,0.35);
+            min-width: 160px;
+            padding: 12px 16px;
+        }
+        .node-db .node-label { color: var(--db); }
+        .node-db .node-title { color: var(--db); font-size: 13px; }
+
+        /* ARROWS */
+        .arrow-v {
+            width: 2px;
+            height: 36px;
+            background: linear-gradient(to bottom, var(--clr, var(--muted)), transparent);
+            position: relative;
+            margin: 0 auto;
+        }
+        .arrow-v::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 7px solid var(--clr, var(--muted));
+        }
+
+        .arrow-h {
+            width: 48px;
+            height: 2px;
+            background: linear-gradient(to right, var(--clr, var(--muted)), transparent);
+            position: relative;
+            flex-shrink: 0;
+        }
+        .arrow-h::after {
+            content: '';
+            position: absolute;
+            right: 0; top: 50%;
+            transform: translateY(-50%);
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 7px solid var(--clr, var(--muted));
+        }
+        .arrow-h.reverse {
+            background: linear-gradient(to left, var(--clr, var(--muted)), transparent);
+        }
+        .arrow-h.reverse::after {
+            right: auto; left: 0;
+            border-left: none;
+            border-right: 7px solid var(--clr, var(--muted));
+        }
+
+        /* STEP BADGE */
+        .step-badge {
+            position: absolute;
+            top: -10px; left: 50%;
+            transform: translateX(-50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 99px;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        /* SECTION LABELS */
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            text-align: center;
+            margin: 4px 0 12px;
+            text-transform: uppercase;
+        }
+
+        /* AGENTS ROW */
+        .agents-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 24px;
+            width: 100%;
+        }
+
+        .agent-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        /* TOOLS ROW */
+        .tools-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .tool-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        /* CALLOUT */
+        .callout {
+            margin-top: 40px;
+            border: 1px solid rgba(245,158,11,0.3);
+            background: rgba(245,158,11,0.04);
+            border-radius: 10px;
+            padding: 16px 24px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .callout-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .callout-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--tool);
+            margin-bottom: 4px;
+        }
+
+        .callout-body {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .callout-body strong { color: var(--text); }
+
+        /* ANIM */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .flow > * {
+            animation: fadeUp 0.4s ease both;
+        }
+
+        .flow > *:nth-child(1) { animation-delay: 0.05s; }
+        .flow > *:nth-child(2) { animation-delay: 0.1s; }
+        .flow > *:nth-child(3) { animation-delay: 0.15s; }
+        .flow > *:nth-child(4) { animation-delay: 0.2s; }
+        .flow > *:nth-child(5) { animation-delay: 0.25s; }
+        .flow > *:nth-child(6) { animation-delay: 0.3s; }
+        .flow > *:nth-child(7) { animation-delay: 0.35s; }
+        .flow > *:nth-child(8) { animation-delay: 0.4s; }
+        .flow > *:nth-child(9) { animation-delay: 0.45s; }
+        .flow > *:nth-child(10) { animation-delay: 0.5s; }
+
+        /* PULSE on orchestrator */
+        @keyframes pulse-border {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.4); }
+            50%       { box-shadow: 0 0 0 6px rgba(14,165,233,0); }
+        }
+        .node-orchestrator {
+            animation: pulse-border 3s ease-in-out infinite;
+        }
+
+        .dashed-separator {
+            width: 80%;
+            border: none;
+            border-top: 1px dashed rgba(255,255,255,0.07);
+            margin: 8px auto;
+        }
+
+        .model-badge {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        .badge-gemini {
+            background: rgba(14,165,233,0.15);
+            color: var(--orchestrator);
+            border: 1px solid rgba(14,165,233,0.3);
+        }
+
+        .badge-ollama {
+            background: rgba(167,139,250,0.12);
+            color: var(--turnover);
+            border: 1px solid rgba(167,139,250,0.25);
+        }
+
+        /* RETURN arrow label */
+        .arrow-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            color: var(--muted);
+            text-align: center;
+            margin: 2px 0;
+        }
+
+        /* Cross domain box */
+        .cross-box {
+            border: 1px dashed rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px 16px 16px;
+            position: relative;
+            width: 100%;
+            margin: 8px 0;
+        }
+
+        .cross-box-label {
+            position: absolute;
+            top: -11px; left: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            background: var(--bg);
+            padding: 0 8px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <header>
+        <div class="tag">LANGCHAIN4J · MULTI-AGENT SYSTEM</div>
+        <h1>Stock Intelligence<br><span>Agent Orchestration Flow</span></h1>
+        <p class="subtitle">Cross-domain query · Gemini 2.5 Flash + Qwen3:8b (local)</p>
+    </header>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orchestrator)"></div>Orchestrator (Gemini)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--turnover)"></div>TurnoverAgent (Ollama)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--stock)"></div>StockAgent (Ollama)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--tool)"></div>@Tool method</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--db)"></div>Database</div>
+    </div>
+
+    <div class="flow">
+
+        <!-- USER -->
+        <div class="row">
+            <div class="node node-user">
+                <div class="node-label">👤 USER</div>
+                <div class="node-title">"Which Category C product<br>has a stock alert?"</div>
+                <div class="node-sub">cross-domain question</div>
+            </div>
+        </div>
+
+        <!-- arrow down -->
+        <div class="arrow-v" style="--clr: var(--orchestrator)"></div>
+
+        <!-- ORCHESTRATOR -->
+        <div class="row">
+            <div class="node node-orchestrator">
+                <div class="node-label">🧠 ORCHESTRATOR — AiService</div>
+                <div class="node-title">OrchestratorAgent</div>
+                <div class="node-sub">Detects cross-domain · Plans 2-step routing</div>
+                <div class="model-badge badge-gemini">gemini-2.5-flash · tools=3</div>
+            </div>
+        </div>
+
+        <!-- CROSS DOMAIN BOX -->
+        <div style="width:100%; padding: 0 16px; margin-top: 8px;">
+            <div class="cross-box">
+                <div class="cross-box-label">cross-domain resolution</div>
+
+                <!-- STEP 1 -->
+                <div class="section-label">step 1 — ABC Classification</div>
+                <div class="agents-row">
+
+                    <div class="agent-col">
+                        <!-- arrow down to turnover -->
+                        <div class="arrow-v" style="--clr: var(--turnover); height:28px"></div>
+                        <div class="node node-turnover" style="position:relative">
+                            <div class="step-badge" style="background:rgba(167,139,250,0.2);color:var(--turnover);border:1px solid rgba(167,139,250,0.4)">askTurnoverAgent()</div>
+                            <div class="node-label">🔄 TURNOVER AGENT</div>
+                            <div class="node-title">TurnoverAgent</div>
+                            <div class="node-sub">@Tool: getAbcClassification</div>
+                            <div class="model-badge badge-ollama">qwen3:8b · localhost:11434</div>
+                        </div>
+                        <div class="arrow-v" style="--clr: var(--tool); height:28px"></div>
+                        <div class="node node-tool">
+                            <div class="node-label">⚙️ TOOL</div>
+                            <div class="node-title">getAbcClassification</div>
+                            <div class="node-sub">category: "C"</div>
+                        </div>
+                        <div class="arrow-v" style="--clr: var(--db); height:28px"></div>
+                        <div class="node node-db">
+                            <div class="node-label">🗄️ DATABASE</div>
+                            <div class="node-title">StockMovement</div>
+                            <div class="node-sub">outbound volume → ABC curve</div>
+                        </div>
+                        <div class="arrow-v" style="--clr: var(--turnover); height:28px"></div>
+                        <div class="node node-turnover" style="background:rgba(167,139,250,0.04)">
+                            <div class="node-label">📤 RESULT</div>
+                            <div class="node-title" style="font-size:12px">15 Category C products</div>
+                            <div class="node-sub">Desk Lamp, 16GB USB Drive, ...</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <hr class="dashed-separator" style="margin: 20px auto">
+
+                <!-- STEP 2 -->
+                <div class="section-label">step 2 — Stock Alerts (filtered)</div>
+                <div class="agents-row">
+
+                    <div class="agent-col">
+                        <div class="arrow-v" style="--clr: var(--stock); height:28px"></div>
+                        <div class="node node-stock" style="position:relative">
+                            <div class="step-badge" style="background:rgba(52,211,153,0.15);color:var(--stock);border:1px solid rgba(52,211,153,0.35)">askStockAgent(productNames: "Desk Lamp, ...")</div>
+                            <div class="node-label">📦 STOCK AGENT</div>
+                            <div class="node-title">StockAgent</div>
+                            <div class="node-sub">@Tool: getProductsWithAlerts</div>
+                            <div class="model-badge badge-ollama">qwen3:8b · localhost:11434</div>
+                        </div>
+                        <div class="arrow-v" style="--clr: var(--tool); height:28px"></div>
+                        <div class="node node-tool">
+                            <div class="node-label">⚙️ TOOL</div>
+                            <div class="node-title">getProductsWithAlerts</div>
+                            <div class="node-sub">productNames: "Desk Lamp, 16GB USB..." <br>✅ @P — declared param, no hallucination</div>
+                        </div>
+                        <div class="arrow-v" style="--clr: var(--db); height:28px"></div>
+                        <div class="node node-db">
+                            <div class="node-label">🗄️ DATABASE</div>
+                            <div class="node-title">Product</div>
+                            <div class="node-sub">WHERE current_stock &lt; min OR &gt; max</div>
+                        </div>
+                        <div class="arrow-v" style="--clr: var(--stock); height:28px"></div>
+                        <div class="node node-stock" style="background:rgba(52,211,153,0.04)">
+                            <div class="node-label">📤 RESULT</div>
+                            <div class="node-title" style="font-size:12px">5 products with alerts</div>
+                            <div class="node-sub">Black Pencil ↓ · Notebook ↑ · Yellow Highlighter ↓ · ...</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div><!-- cross-box -->
+        </div>
+
+        <!-- arrow back to orchestrator -->
+        <div class="arrow-v" style="--clr: var(--orchestrator)"></div>
+
+        <!-- ORCHESTRATOR COMBINES -->
+        <div class="row">
+            <div class="node node-orchestrator" style="background:rgba(14,165,233,0.05)">
+                <div class="node-label">🔗 COMBINE RESULTS</div>
+                <div class="node-title">OrchestratorAgent</div>
+                <div class="node-sub">Intersects Category C list ∩ Alerts list → final answer</div>
+                <div class="model-badge badge-gemini">gemini-2.5-flash · stepsTaken: 2</div>
+            </div>
+        </div>
+
+        <div class="arrow-v" style="--clr: rgba(255,255,255,0.3)"></div>
+
+        <!-- FINAL ANSWER -->
+        <div class="row">
+            <div class="node node-user" style="min-width:300px; max-width:480px; border-color:rgba(255,255,255,0.25)">
+                <div class="node-label">✅ FINAL ANSWER</div>
+                <div class="node-title" style="font-size:13px; text-align:left; line-height:1.8">
+                    Black Pencil — BELOW MIN (5/20)<br>
+                    Notebook — ABOVE MAX (110/100)<br>
+                    Yellow Highlighter — BELOW MIN (3/10)<br>
+                    Glue Stick — BELOW MIN (10/15)<br>
+                    16GB USB Drive — BELOW MIN (8/20)
+                </div>
+            </div>
+        </div>
+
+    </div><!-- flow -->
+
+    <!-- CALLOUT -->
+    <div class="callout">
+        <div class="callout-icon">🛡️</div>
+        <div>
+            <div class="callout-title">Hallucination fixed with @P</div>
+            <div class="callout-body">
+                Before: <strong>qwen3:8b was hallucinating</strong> the <strong>productNames</strong> parameter as an array — not declared in the tool signature.<br>
+                After: parameter declared with <strong>@P("Optional: comma-separated...")</strong> → model passes a correct string, filter applied in Java.<br>
+                Cost: <strong>+44 input tokens</strong>. Gain: deterministic and correct results.
+            </div>
+        </div>
+    </div>
+
+</div><!-- page -->
+
+<script>
+(function() {
+  var ws = new WebSocket('ws://' + window.location.host + 
+             '/jb-server-page?reloadMode=RELOAD_ON_SAVE&'+
+             'referrer=' + encodeURIComponent(window.location.pathname));
+  ws.onmessage = function (msg) {
+      if (msg.data === 'reload') {
+          window.location.reload();
+      }
+      if (msg.data.startsWith('update-css ')) {
+          var messageId = msg.data.substring(11);
+          var links = document.getElementsByTagName('link');
+          for (var i = 0; i < links.length; i++) {
+              var link = links[i];
+              if (link.rel !== 'stylesheet') continue;
+              var clonedLink = link.cloneNode(true);
+              var newHref = link.href.replace(/(&|\?)jbUpdateLinksId=\d+/, "$1jbUpdateLinksId=" + messageId);
+              if (newHref !== link.href) {
+                clonedLink.href = newHref;
+              }
+              else {
+                var indexOfQuest = newHref.indexOf('?');
+                if (indexOfQuest >= 0) {
+                  // to support ?foo#hash 
+                  clonedLink.href = newHref.substring(0, indexOfQuest + 1) + 'jbUpdateLinksId=' + messageId + '&' + 
+                                    newHref.substring(indexOfQuest + 1);
+                }
+                else {
+                  clonedLink.href += '?' + 'jbUpdateLinksId=' + messageId;
+                }
+              }
+              link.replaceWith(clonedLink);
+          }
+      }
+  };
+})();
+</script></body></html>
