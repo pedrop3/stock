@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 public class ObsoleteTools {
 
     private final ProductService productService;
+    
     @Tool("""
         Action: Lists products marked with obsolete = true in the system.
         When to use: questions about "obsolete products", "discontinued items",

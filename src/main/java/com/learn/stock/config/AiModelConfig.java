@@ -22,17 +22,27 @@ public class AiModelConfig {
     @Bean
     public OllamaChatModel ollamaChatModel() {
         return OllamaChatModel.builder()
+                // Base URL of the Ollama server (e.g., http://localhost:11434)
                 .baseUrl(properties.getOllama().getBaseUrl())
+                // Model identifier running on Ollama (e.g., qwen2.5, deepseek-r1)
                 .modelName(properties.getOllama().getModelName())
+                // Max time to wait for a response before timing out
                 .timeout(Duration.ofSeconds(properties.getOllama().getTimeout()))
+                // Log outgoing requests to the model (useful for debugging prompts and tool calls)
                 .logRequests(true)
+                // Log incoming responses from the model (useful for debugging outputs)
                 .logResponses(true)
+                // Deterministic output — no randomness in token sampling
                 .temperature(0.0)
+                // Max number of tokens the model can generate per response
                 .numPredict(512)
+                // Context window size in tokens — how much conversation history the model can see
                 .numCtx(32768)
+                // Penalizes repeated tokens to reduce redundant or looping output
                 .repeatPenalty(1.2)
+                // Enables extended thinking — the model reasons step-by-step internally before answering
                 .think(true)
-                //.stop(endResponse)
+                // Tracks token usage metrics (input/output counts) for monitoring and cost analysis
                 .listeners(List.of(new TokenUsageListener()))
                 .build();
     }
@@ -66,7 +76,7 @@ public class AiModelConfig {
                 .topP(0.8)
                 .maxOutputTokens(1024)
                 .thinkingConfig(GeminiThinkingConfig.builder()
-                        .includeThoughts(true)
+                        .includeThoughts(false) // Think internally, don't pollute the response and sub agents
                         .thinkingBudget(512)
                         .build())
                 .build();
