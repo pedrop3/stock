@@ -1,10 +1,19 @@
 databaseChangeLog:
   - changeSet:
+      id: create-tables
+      author: Pedro Santos
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/create-tables.sql
+            encoding: utf8
+            splitStatements: false
+            stripComments: true
+  - changeSet:
       id: insert-initial-data-products
       author: Pedro Santos
       changes:
         - sqlFile:
-            path: db/changelog/sql/insert.sql
+            path: db/changelog/sql/insert-data.sql
             encoding: utf8
             splitStatements: false
             stripComments: true
